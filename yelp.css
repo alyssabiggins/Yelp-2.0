@@ -1,0 +1,13 @@
+.directions{
+	float: right;
+	width: 200px;
+}
+
+.container { position: relative;  padding: 0 0 0 200px; }
+#sidebar {
+    position:absolute; 
+    top:0; bottom:0; left:0;
+    width:100px;
+}
+
+
