@@ -6,6 +6,7 @@
 <head>
 	<meta charset="utf-8" />
 	<title>Yelp</title>
+	<link rel = "stylesheet" href = "yelp.css"/>
 
 </head>
 
@@ -82,10 +83,31 @@ function getCoords($loc) {
    
 }
 
+function getDirections($origin, $dest){
+  $url='https://maps.googleapis.com/maps/api/directions/xml?';
+  $url .= 'origin='.urlencode($origin);
+  $url .= '&destination='.urlencode($dest);
+  $url .= "&key=AIzaSyA81dAYsREb_3wFTKxDdmoXqJdcSHWQTxc";
+
+  $xml = new SimpleXMLElement( file_get_contents( $url ) );
+
+  //echo "URL: $url";
+  
+  if ($xml->status != 'OK'){
+    die("No good.");
+  }
+  
+  return $xml;
+
+
+
+}
+
 
 
 // Displays the table of restaurants
 function displaySearchResults() {
+
   $pricemin = isset($_GET['price']) ? $_GET['price'] : 0;
   $ratingmin = isset($_GET['rating']) ? $_GET['rating'] : 0;
   
@@ -110,7 +132,9 @@ function displaySearchResults() {
 
 
   ?>
-  <table>
+  <div class = "container">
+  <div id="sidebar"><?php displayWelcomePage(); ?></div>
+  <table >
   	<tr>
   		<th>Restaurant</th>
    	</tr>
@@ -118,11 +142,16 @@ function displaySearchResults() {
   while ( @extract( mysqli_fetch_array($result, MYSQLI_ASSOC) ) ) {
 	$valid = true;
 	
-	$rCoords = getCoords($address);
-	$distance = haversineGreatCircleDistance($coords["lat"],$coords["long"],
-    								$rCoords["lat"],$rCoords["long"]);
+	//$rCoords = getCoords($address);
+	//$distance = haversineGreatCircleDistance($coords["lat"],$coords["long"],
+    								//$rCoords["lat"],$rCoords["long"]);
+
+
+  $directions = getDirections($location,$address);
+  $distance = $directions->route->leg->distance->text;
+
     if ($distance>32000) {
-      //$valid = false;
+      $valid = false;
     }
 	
     if(isset($_GET['price']) && $avgprices[$R_ID]> $_GET['price']){
@@ -133,6 +162,8 @@ function displaySearchResults() {
     }
     $avgPrice = intval($avgprices[$R_ID]);
     $avgRating = intval($avgrating[$R_ID]);
+
+
     if ( $valid ) {
     	echo "<tr>
         	  	<td>
@@ -140,9 +171,9 @@ function displaySearchResults() {
             	Price:  $avgPrice <br>
             	Rating:  $avgRating<br>
             	Type of food served here:  $category[$R_ID] <br>
-      			Location:  $address <br>
-      			Distance: $distance <br>
-      			<a href = 'http://cscilab.bc.edu/~bigginsa/yelp/project/restpage.php'> Click Here To Find Out More About $name</a>
+              Location:  $address <br>
+              Distance: $distance <br>
+              <a href = 'http://cscilab.bc.edu/~bigginsa/yelp/project/restpage.php?rid=$R_ID'> Click Here To Find Out More About $name</a>
             	</td>
           	</tr>";
     }
@@ -150,6 +181,8 @@ function displaySearchResults() {
   disconnectFromDB($dbc,$result);
   ?>
   </table>
+  </div>
+
 
   <?php
 }
@@ -182,7 +215,57 @@ function getCategory(){
 	return $array;
 	
 }
-
+function displayWelcomePage(){
+?>
+<fieldset>
+      <legend>Welcome to Yelp 2.0: Boston Edition </legend>
+      <form method = "get" action = "query.php">
+        <label>Search for a restaurant by price: </label>
+        <select name = 'price' >
+        		<option value = '0'> --Select One-- </option>
+                <option value = '1'>$</option>
+                <option value = '2'>$$</option>
+                <option value = '3'>$$$</option>
+                <option value = '4'>$$$$</option>
+        </select><br><br>
+        <label>Search for a restaurant by rating: </label>
+        <select name = 'rating' >
+        		<option value = '0'> --Select One--</option>
+                <option value = '1'>*</option>
+                <option value = '2'>**</option>
+                <option value = '3'>***</option>
+                <option value = '4'>****</option>
+                <option value = '5'>*****</option>
+        </select><br><br>
+        <label>Search for a restaurant by type of food: </label>
+        <select name = 'type' >
+        		<option value = '0'>--Select One-- </option>
+                <option value = 'Italian'>Italian</option>
+                <option value = 'Mexican'>Mexican</option>
+                <option value = 'American'>American</option>
+                <option value = 'Indian'>Indian</option>
+                <option value = 'Mediterranean'>Mediterranean</option>
+                <option value = 'Chinese'>Chinese</option>
+                <option value = 'Korean'>Korean</option>
+                <option value = 'Thai'>Thai</option>
+                <option value = 'Japanese'>Japenese</option>
+                <option value = 'Puerto Rican'>Puerto Rican</option>
+                <option value = 'Dessert'>Dessert</option>
+                <option value = 'Kosher'>Kosher</option>
+                <option value = 'Soul Food'>Soul Food</option>
+                <option value = 'Wings'>Wings</option>
+                <option value = 'Pizza'>Pizza</option>
+                <option value = 'Breakfast/Brunch'>Breakfast/Brunch</option>
+                <option value = 'BBQ'>BBQ</option>
+        </select><br><br>
+        <label>Search for a restaurant by location: </label>
+        <input type = 'text' name = 'location'>
+        <br><br>
+        <input type = "submit" name = "go">
+      </form>
+    </fieldset>
+<?php
+}
 
 
 
