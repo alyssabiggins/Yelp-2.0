@@ -146,19 +146,17 @@ function displaySearchResults() {
    	</tr>
   <?php
   while ( @extract( mysqli_fetch_array($result, MYSQLI_ASSOC) ) ) {
-	$valid = true;
+	   $valid = true;
 
-	//$rCoords = getCoords($address);
-	//$distance = haversineGreatCircleDistance($coords["lat"],$coords["long"],
-    								//$rCoords["lat"],$rCoords["long"]);
+    $distance = "";
 
-
-  $directions = getDirections($location,$address);
-  $distance = $directions->route->leg->distance->text;
-
-    if ($distance>32000) {
-      $valid = false;
+    if($location === NULL || $location === ""){
+      $distance = "N/A";
+    } else {
+        $directions = getDirections($location,$address);
+        $distance = $directions->route->leg->distance->text;
     }
+
 
     if(isset($_GET['price']) && $avgprices[$R_ID]> $_GET['price']){
     	$valid = false;
