@@ -3,11 +3,14 @@
 <head>
      <meta charset="utf-8" />
      <title>Yelp 2.0</title>
+     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.4/superhero/bootstrap.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
 </head>
 <body>
 <?php
 displayWelcomePage();
-?>    
+?>
 </body>
 </html>
 
@@ -17,15 +20,15 @@ function displayWelcomePage(){
 <fieldset>
       <legend>Welcome to Yelp 2.0: Boston Edition </legend>
       <form method = "get" action = "query.php">
-        <label>Search for a restaurant by price: </label>
+        <label>Search for a restaurant by maximum price: </label>
         <select name = 'price' >
-        		<option value = '0'> --Select One--</option>
+        		<option value = '5'> --Select One--</option>
                 <option value = '1'>$</option>
                 <option value = '2'>$$</option>
                 <option value = '3'>$$$</option>
                 <option value = '4'>$$$$</option>
         </select><br><br>
-        <label>Search for a restaurant by rating: </label>
+        <label>Search for a restaurant by minimum rating: </label>
         <select name = 'rating' >
         		<option value = '0'>--Select One-- </option>
                 <option value = '1'>*</option>
@@ -63,4 +66,4 @@ function displayWelcomePage(){
 </fieldset>
 <?php
 }
-    
+
