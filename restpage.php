@@ -9,33 +9,79 @@ include('../include/dbconn.php');
      <meta charset="utf-8" />
      <title>Yelp 2.0</title>
      <link rel = "stylesheet" href = "yelp.css"/>
+     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.4/superhero/bootstrap.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+	<script type="text/javascript">
+			function myYelpValidate() {
+				var rating   = myYelpValidatePulldown("rating");
+				var price    = myYelpValidatePulldown("price");
+
+				if ( price && rating ) {
+					return true;
+				}
+				return false;
+			}
+			function myYelpValidatePulldown(name) {
+				var select = document.getElementById(name);
+				var val = select.options[select.selectedIndex].value;
+				var report = document.getElementById(name+"error");
+				if ( val=="none" ) {
+					report.innerHTML = "required field";
+					return false;
+				}
+				report.innerHTML = "";
+				return true;
+			}
+	</script>
 </head>
 <body>
 <?php
-displayRestaurant();
-?>    
+	if ( isset($_POST['go']) ) {
+		enterReview();
+	}
+
+	displayRestaurant();
+?>
 </body>
 </html>
 
 <?php
 
+function enterReview() {
+	$review = $_POST['review'];
+	$rating = $_POST['rating'];
+	$price  = $_POST['price'];
+	$query = "";
+	if ( $review === "" ) {
+		$query = "insert into ratings (rest_id, rating, price)
+				  values($_GET[rid], '$rating', '$price');";
+	} else {
+		$query = "insert into ratings (rest_id, rating, price, comment)
+		          values($_GET[rid], '$rating', '$price', '$review');";
+	}
 
+	$dbc = connectToDB('bigginsa');
+	performQuery($dbc, $query);
+	mysqli_close($dbc);
+	echo "Your rating has been successfully enered!";
+}
 
 function getAll($rid){
 
 	$dbc = connectToDB('bigginsa');
 	$query = "select * from ratings where rest_id = $rid";
-	
+
 	$result = performQuery($dbc, $query);
 	/*$row = $result->fetch_assoc();
   echo "$row";*/
 	$arrayComment = array();
   $arrayPrice = array();
   $arrayRating = array();
-  
+
   $count = 0;
   while ( @extract( mysqli_fetch_array($result, MYSQLI_ASSOC) ) ) {
-    
+
     if($comment === NULL){
       $arrayComment[$count] = "";
     } else {
@@ -58,10 +104,10 @@ function getAll($rid){
         break;
        case "5":
         $arrayPrice[$count] = "Very Expensive";
-        break;   
-    } 
+        break;
+    }
     $count ++;
-  }	
+  }
 
   $array = array();
   $array["comment"] = $arrayComment;
@@ -80,23 +126,23 @@ function getAll($rid){
 function getCategory(){
   $dbc = connectToDB("bigginsa");
   $query = "select * from Categories;";
-  
+
   $result = performQuery($dbc, $query);
   $array = array();
-  
-  
+
+
   while ( @extract( mysqli_fetch_array($result, MYSQLI_ASSOC) ) ) {
-    
+
     if(array_key_exists($Restaurant_ID, $array)){
       $array[$Restaurant_ID] = $array[$Restaurant_ID] . ", $Category";
     } else {
       $array[$Restaurant_ID] = "$Category";
     }
-    
+
   }
   disconnectFromDB($dbc, $query);
   return $array;
-  
+
 }
 
 function getAvgs( $field ) {
@@ -148,7 +194,7 @@ function getCoords($loc) {
   $key = "key=AIzaSyA81dAYsREb_3wFTKxDdmoXqJdcSHWQTxc";
   $geocodeURL = "https://maps.googleapis.com/maps/api/geocode/xml?";
   $address = "address=" . urlencode($loc);
-  
+
   $geocoderequest = "$geocodeURL$address" . "&" . $key;
   $xml = new SimpleXMLElement( file_get_contents( $geocoderequest ) );
   if ($xml->status != 'OK'){
@@ -159,7 +205,7 @@ function getCoords($loc) {
   $latitude = (float)$location["latitude"];
   $longitude = (float)$location["longitude"];
   return array("lat" => $latitude, "long" => $longitude);
-   
+
 }
 
 
@@ -168,15 +214,15 @@ function getCoords($loc) {
 function displaySearchResults() {
   $pricemin = isset($_GET['price']) ? $_GET['price'] : 0;
   $ratingmin = isset($_GET['rating']) ? $_GET['rating'] : 0;
-  
+
   $location = isset($_GET['location']) ? $_GET['location'] : NULL;
   $coords = getCoords($location);
-  
+
   $category = getCategory();
   //print_r($category);
   $avgprices = getAvgs("price");
   $avgrating = getAvgs("rating");
-  
+
   $dbc = connectToDB("bigginsa");
   $pred = "";
   if (isset( $_GET['type']) && $_GET['type'] !== ''){
@@ -199,14 +245,14 @@ function displaySearchResults() {
   <?php
   while ( @extract( mysqli_fetch_array($result, MYSQLI_ASSOC) ) ) {
 	$valid = true;
-	
+
 	$rCoords = getCoords($address);
 	$distance = haversineGreatCircleDistance($coords["lat"],$coords["long"],
     								$rCoords["lat"],$rCoords["long"]);
     if ($distance>32000) {
       //$valid = false;
     }
-	
+
     if(isset($_GET['price']) && $avgprices[$R_ID]> $_GET['price']){
     	$valid = false;
     }
@@ -254,11 +300,11 @@ function getDirections($origin, $dest){
   $xml = new SimpleXMLElement( file_get_contents( $url ) );
 
   //echo "URL: $url";
-  
+
   if ($xml->status != 'OK'){
     die("No good.");
   }
-  
+
   return $xml;
 
 
@@ -275,7 +321,7 @@ function showDirections($xml){
 <?php
   $leg = $xml->route->leg;
   foreach ($leg->step as $step) {
-    $pos=strpos($step->html_instructions, 'Destination'); 
+    $pos=strpos($step->html_instructions, 'Destination');
     echo "<tr><td>";
     if ($pos == false){
       echo $step->html_instructions. ' for '.$step->distance->text;
@@ -313,10 +359,10 @@ function optionDirections(){
 
 
 function displayRestaurant(){
-    
 
-  
-  
+
+
+
   //$location = isset($_GET['location']) ? $_GET['location'] : NULL;
   //$coords = getCoords($location);
 
@@ -335,7 +381,7 @@ function displayRestaurant(){
   $comratpri = getAll($r_id);
 
   $query = "SELECT * FROM `restaurants` WHERE " . $pred;
-  
+
 
   $result = performQuery($dbc, $query);
 
@@ -350,32 +396,51 @@ function displayRestaurant(){
       optionDirections();
     }
     echo "
-    <h1>Your Restaurant Pick</h1>
-    Name: $name <br>
-    City:  $city <br>
+    <h1>$name</h1>
+    Address:  $address <br>
     Phone:  $phone<br>
     Website: <a href =$website> $name Website</a><br>
-    Type of food served here:  $category[$R_ID]";
+    Type of food served here:  $category[$R_ID] <br><br>";
   ?>
-
-
-  
+  <form id='review' method='post' onsubmit="return myYelpValidate()">
+  Tell us about your experience here<br>
+  Star Rating:<br>
+  <select name = 'rating' id='rating'>
+      <option value = 'none'>--Select One-- </option>
+      <option value = '1'>*</option>
+      <option value = '2'>**</option>
+      <option value = '3'>***</option>
+      <option value = '4'>****</option>
+      <option value = '5'>*****</option>
+  </select><span id="ratingerror"></span><br><br>
+  Price:<br>
+  <select name = 'price' id='price'>
+      <option value = 'none'>--Select One-- </option>
+      <option value = '1'>$</option>
+      <option value = '2'>$$</option>
+      <option value = '3'>$$$</option>
+      <option value = '4'>$$$$</option>
+  </select><span id="priceerror"></span><br><br>
+  Comments?<br>
+  <textarea name="review"></textarea><br>
+  <input type = "submit" name = "go" value = "Submit your Review">
+  </form><br><br>
 
 
   <table>
     <tr>
-      <th>User Reviews</th> 
-    </tr> 
+      <th>User Reviews</th>
+    </tr>
   <?php
 
   @extract($comratpri);
   //print_r($comment);
   foreach($comment as $key => $value ) {
     echo "<tr>
-          <td> 
+          <td>
           Star Rating: $rating[$key] <br>
-          $price[$key] <br>
-          $value <br><br>
+          Price Rating: $price[$key] <br>
+          Comments: $value <br><br>
           </td>
           </tr>";
   }
@@ -384,8 +449,9 @@ function displayRestaurant(){
 
   <?php
   disconnectFromDB($dbc,$result);
-  
+
 
 
 }
+
 
