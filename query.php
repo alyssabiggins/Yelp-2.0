@@ -8,6 +8,11 @@
 	<title>Yelp</title>
 	<link rel = "stylesheet" href = "yelp.css"/>
 
+
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.4/superhero/bootstrap.min.css">
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+
 </head>
 
 <body>
@@ -69,7 +74,7 @@ function getCoords($loc) {
   $key = "key=AIzaSyA81dAYsREb_3wFTKxDdmoXqJdcSHWQTxc";
   $geocodeURL = "https://maps.googleapis.com/maps/api/geocode/xml?";
   $address = "address=" . urlencode($loc);
-  
+
   $geocoderequest = "$geocodeURL$address" . "&" . $key;
   $xml = new SimpleXMLElement( file_get_contents( $geocoderequest ) );
   if ($xml->status != 'OK'){
@@ -80,7 +85,7 @@ function getCoords($loc) {
   $latitude = (float)$location["latitude"];
   $longitude = (float)$location["longitude"];
   return array("lat" => $latitude, "long" => $longitude);
-   
+
 }
 
 function getDirections($origin, $dest){
@@ -92,11 +97,11 @@ function getDirections($origin, $dest){
   $xml = new SimpleXMLElement( file_get_contents( $url ) );
 
   //echo "URL: $url";
-  
+
   if ($xml->status != 'OK'){
     die("No good.");
   }
-  
+
   return $xml;
 
 
@@ -108,20 +113,20 @@ function getDirections($origin, $dest){
 // Displays the table of restaurants
 function displaySearchResults() {
 
-  $pricemin = isset($_GET['price']) ? $_GET['price'] : 0;
+  $pricemax = isset($_GET['price']) ? $_GET['price'] : 5;
   $ratingmin = isset($_GET['rating']) ? $_GET['rating'] : 0;
-  
+
   $location = isset($_GET['location']) ? $_GET['location'] : NULL;
   $coords = getCoords($location);
-  
+
   $category = getCategory();
   //print_r($category);
   $avgprices = getAvgs("price");
   $avgrating = getAvgs("rating");
-  
+
   $dbc = connectToDB("bigginsa");
   $pred = "";
-  if (isset( $_GET['type']) && $_GET['type'] !== ''){
+  if (isset( $_GET['type']) && $_GET['type'] !== '0'){
   	$type = $_GET['type'];
   	$pred = "r_id in (select restaurant_id from Categories where Category = '$type')";
   } else {
@@ -132,16 +137,17 @@ function displaySearchResults() {
 
 
   ?>
-  <div class = "container">
-  <div id="sidebar"><?php displayWelcomePage(); ?></div>
-  <table >
+
+  <div id="sidebar-wrapper"><?php displayWelcomePage(); ?></div>
+  <div id= "page-content-wrapper">
+  <table class = "container-fluid">
   	<tr>
-  		<th>Restaurant</th>
+  		<th><h3>Matching Restaurant(s)</h3></th>
    	</tr>
   <?php
   while ( @extract( mysqli_fetch_array($result, MYSQLI_ASSOC) ) ) {
 	$valid = true;
-	
+
 	//$rCoords = getCoords($address);
 	//$distance = haversineGreatCircleDistance($coords["lat"],$coords["long"],
     								//$rCoords["lat"],$rCoords["long"]);
@@ -153,7 +159,7 @@ function displaySearchResults() {
     if ($distance>32000) {
       $valid = false;
     }
-	
+
     if(isset($_GET['price']) && $avgprices[$R_ID]> $_GET['price']){
     	$valid = false;
     }
@@ -174,7 +180,7 @@ function displaySearchResults() {
               Location:  $address <br>
               Distance: $distance <br>
               <a href = 'http://cscilab.bc.edu/~bigginsa/yelp/project/restpage.php?rid=$R_ID'> Click Here To Find Out More About $name</a>
-            	</td>
+            	<br><br></td>
           	</tr>";
     }
   }
@@ -197,38 +203,38 @@ function getLocation($xml){
 function getCategory(){
 	$dbc = connectToDB("bigginsa");
 	$query = "select * from Categories;";
-	
+
 	$result = performQuery($dbc, $query);
 	$array = array();
-	
-	
+
+
 	while ( @extract( mysqli_fetch_array($result, MYSQLI_ASSOC) ) ) {
-		
+
 		if(array_key_exists($Restaurant_ID, $array)){
 			$array[$Restaurant_ID] = $array[$Restaurant_ID] . ", $Category";
 		} else {
 			$array[$Restaurant_ID] = "$Category";
 		}
-		
+
 	}
 	disconnectFromDB($dbc, $query);
 	return $array;
-	
+
 }
 function displayWelcomePage(){
 ?>
-<fieldset>
-      <legend>Welcome to Yelp 2.0: Boston Edition </legend>
+<fieldset class = "sidebar-nav">
+      <legend class="side-legend">Welcome to Yelp 2.0: Boston Edition </legend>
       <form method = "get" action = "query.php">
-        <label>Search for a restaurant by price: </label>
+        <label>Search for a restaurant by maximum price: </label>
         <select name = 'price' >
-        		<option value = '0'> --Select One-- </option>
+        		<option value = '5'> --Select One-- </option>
                 <option value = '1'>$</option>
                 <option value = '2'>$$</option>
                 <option value = '3'>$$$</option>
                 <option value = '4'>$$$$</option>
         </select><br><br>
-        <label>Search for a restaurant by rating: </label>
+        <label>Search for a restaurant by minimum rating: </label>
         <select name = 'rating' >
         		<option value = '0'> --Select One--</option>
                 <option value = '1'>*</option>
